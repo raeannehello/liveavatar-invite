@@ -16,8 +16,15 @@ export default async function handler(req, res) {
   const voiceId = process.env.VOICE_ID;
   const contextId = process.env.CONTEXT_ID;
 
-  if (!apiKey || !avatarId || !voiceId) {
-    return res.status(500).json({ error: 'Missing environment variables' });
+  // Debug: Check which env vars are set
+  if (!apiKey) {
+    return res.status(500).json({ error: 'LIVEAVATAR_API_KEY is not set' });
+  }
+  if (!avatarId) {
+    return res.status(500).json({ error: 'AVATAR_ID is not set' });
+  }
+  if (!voiceId) {
+    return res.status(500).json({ error: 'VOICE_ID is not set' });
   }
 
   try {
@@ -43,12 +50,18 @@ export default async function handler(req, res) {
       body: JSON.stringify(tokenBody)
     });
 
+    const tokenText = await tokenRes.text();
+    
     if (!tokenRes.ok) {
-      const err = await tokenRes.text();
-      return res.status(500).json({ error: 'Token creation failed', details: err });
+      return res.status(500).json({ 
+        error: 'Token creation failed', 
+        status: tokenRes.status,
+        details: tokenText 
+      });
     }
 
-    const { session_id, session_token } = await tokenRes.json();
+    const tokenData = JSON.parse(tokenText);
+    const { session_id, session_token } = tokenData;
 
     const startRes = await fetch('https://api.liveavatar.com/v1/sessions/start', {
       method: 'POST',
@@ -58,12 +71,17 @@ export default async function handler(req, res) {
       }
     });
 
+    const startText = await startRes.text();
+
     if (!startRes.ok) {
-      const err = await startRes.text();
-      return res.status(500).json({ error: 'Session start failed', details: err });
+      return res.status(500).json({ 
+        error: 'Session start failed', 
+        status: startRes.status,
+        details: startText 
+      });
     }
 
-    const data = await startRes.json();
+    const data = JSON.parse(startText);
 
     return res.status(200).json({
       session_id,
@@ -74,6 +92,6 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Unexpected error', details: error.message });
   }
 }
