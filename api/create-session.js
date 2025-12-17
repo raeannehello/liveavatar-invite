@@ -16,7 +16,6 @@ export default async function handler(req, res) {
   const voiceId = process.env.VOICE_ID;
   const contextId = process.env.CONTEXT_ID;
 
-  // Debug: Check which env vars are set
   if (!apiKey) {
     return res.status(500).json({ error: 'LIVEAVATAR_API_KEY is not set' });
   }
@@ -61,6 +60,15 @@ export default async function handler(req, res) {
     }
 
     const tokenData = JSON.parse(tokenText);
+    
+    // Debug: Return what we got from step 1
+    if (!tokenData.session_token) {
+      return res.status(500).json({
+        error: 'No session_token in response',
+        received: tokenData
+      });
+    }
+
     const { session_id, session_token } = tokenData;
 
     const startRes = await fetch('https://api.liveavatar.com/v1/sessions/start', {
@@ -77,7 +85,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ 
         error: 'Session start failed', 
         status: startRes.status,
-        details: startText 
+        details: startText,
+        tokenUsed: session_token.substring(0, 20) + '...'
       });
     }
 
