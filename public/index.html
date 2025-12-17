@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiveAvatar Session</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/livekit-client/2.0.8/livekit-client.umd.min.js"></script>
+  <script src="https://unpkg.com/livekit-client@2.0.8/dist/livekit-client.umd.js"></script>
   <style>
     .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%); }
     .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2); }
@@ -19,65 +19,44 @@
 
 <div id="app" class="p-6 max-w-2xl mx-auto">
   
-  <!-- Host View -->
-  <div id="host-view">
+  <!-- Landing / Join View -->
+  <div id="join-view">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-2">🤖 LiveAvatar Session</h1>
-      <p class="text-purple-200">Create a session and share the invite link</p>
+      <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">🤖</div>
+      <h1 class="text-3xl font-bold mb-2">Talk to Our AI Avatar</h1>
+      <p class="text-purple-200">Enter your name to start a conversation</p>
     </div>
 
-    <div class="glass rounded-2xl p-8 mb-6">
-      <button id="create-btn" onclick="createSession()" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-semibold flex items-center justify-center gap-3 transition-all">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-        Start Avatar Session
+    <div class="glass rounded-2xl p-8">
+      <div class="mb-4">
+        <label class="block text-sm text-purple-200 mb-2">Your Name</label>
+        <input id="user-name" type="text" value="Guest" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+      </div>
+      
+      <button onclick="startSession()" id="start-btn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Start Conversation
       </button>
     </div>
+  </div>
 
-    <!-- Session Active -->
-    <div id="session-active" class="hidden space-y-6">
-      <div class="glass rounded-2xl p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="w-3 h-3 bg-green-400 rounded-full pulse"></span>
-          <span class="font-semibold">Session Active</span>
-        </div>
-        
-        <div id="video-container" class="aspect-video bg-black/50 rounded-xl mb-4 relative overflow-hidden">
-          <div id="avatar-placeholder" class="absolute inset-0 flex items-center justify-center">
-            <div class="text-center">
-              <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mx-auto mb-3 flex items-center justify-center text-4xl">🤖</div>
-              <p class="text-white/70">Connecting to avatar...</p>
-            </div>
-          </div>
-          <video id="avatar-video" class="w-full h-full object-cover hidden" autoplay playsinline></video>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="bg-white/5 rounded-lg p-3">
-            <p class="text-purple-300 text-xs mb-1">Session ID</p>
-            <p id="session-id" class="font-mono truncate">-</p>
-          </div>
-          <div class="bg-white/5 rounded-lg p-3">
-            <p class="text-purple-300 text-xs mb-1">Status</p>
-            <p id="connection-status">Connecting...</p>
-          </div>
-        </div>
+  <!-- Session View -->
+  <div id="session-view" class="hidden">
+    <div class="glass rounded-2xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="w-3 h-3 bg-green-400 rounded-full pulse"></span>
+        <span class="font-semibold">Connected</span>
+        <span id="user-display" class="text-purple-300 ml-auto"></span>
       </div>
-
-      <!-- Invite Link -->
-      <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 glass rounded-2xl p-6">
-        <h3 class="font-semibold mb-2 flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-          Share Invite Link
-        </h3>
-        <p class="text-purple-200 text-sm mb-4">Anyone with this link can join your session</p>
-        
-        <div class="flex gap-2">
-          <input id="invite-link" type="text" readonly class="flex-1 bg-black/30 rounded-xl px-4 py-3 text-sm font-mono border border-white/10 focus:outline-none">
-          <button onclick="copyLink()" id="copy-btn" class="px-6 bg-white text-purple-900 rounded-xl font-medium hover:bg-purple-100 transition-all flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-            <span>Copy</span>
-          </button>
+      
+      <div id="video-container" class="aspect-video bg-black/50 rounded-xl mb-4 relative overflow-hidden">
+        <div id="avatar-placeholder" class="absolute inset-0 flex items-center justify-center">
+          <div class="text-center">
+            <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mx-auto mb-3 flex items-center justify-center text-4xl">🤖</div>
+            <p class="text-white/70">Connecting to avatar...</p>
+          </div>
         </div>
+        <video id="avatar-video" class="w-full h-full object-cover hidden" autoplay playsinline></video>
       </div>
 
       <div class="flex gap-3">
@@ -92,50 +71,6 @@
     </div>
   </div>
 
-  <!-- Guest View -->
-  <div id="guest-view" class="hidden">
-    <div class="text-center mb-8">
-      <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🤖</div>
-      <h1 class="text-2xl font-bold mb-2">Join Avatar Session</h1>
-      <p class="text-purple-200">You've been invited to a conversation</p>
-    </div>
-
-    <div class="glass rounded-2xl p-8">
-      <div id="guest-join-form">
-        <div class="mb-4">
-          <label class="block text-sm text-purple-200 mb-2">Your Name</label>
-          <input id="guest-name" type="text" value="Guest" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-        </div>
-        
-        <button onclick="joinSession()" id="join-btn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          Join Session
-        </button>
-      </div>
-
-      <div id="guest-connected" class="hidden">
-        <div class="aspect-video bg-black/50 rounded-xl mb-4 relative overflow-hidden">
-          <video id="guest-avatar-video" class="w-full h-full object-cover" autoplay playsinline></video>
-        </div>
-        
-        <div class="flex items-center justify-center gap-2 text-green-400 mb-4">
-          <span class="w-2 h-2 bg-green-400 rounded-full pulse"></span>
-          <span id="guest-status">Connected to session</span>
-        </div>
-
-        <div class="flex gap-3">
-          <button onclick="toggleGuestMic()" id="guest-mic-btn" class="flex-1 py-3 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-            <span id="guest-mic-text">Mute</span>
-          </button>
-          <button onclick="leaveSession()" class="flex-1 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 hover:bg-red-500/30 transition-all">
-            Leave
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Error Display -->
   <div id="error-display" class="hidden fixed bottom-6 left-6 right-6 max-w-2xl mx-auto bg-red-500/20 border border-red-500/30 rounded-xl p-4">
     <p id="error-message" class="text-red-300"></p>
@@ -143,36 +78,20 @@
 </div>
 
 <script>
-  let currentSession = null;
   let room = null;
   let localAudioTrack = null;
   let isMuted = false;
-  let isGuest = false;
+  let currentSession = null;
 
-  // Check for invite link on load
-  document.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const invite = params.get('invite');
+  async function startSession() {
+    const userName = document.getElementById('user-name').value.trim() || 'Guest';
+    const btn = document.getElementById('start-btn');
     
-    if (invite) {
-      try {
-        currentSession = JSON.parse(atob(invite));
-        isGuest = true;
-        document.getElementById('host-view').classList.add('hidden');
-        document.getElementById('guest-view').classList.remove('hidden');
-      } catch (e) {
-        showError('Invalid invite link');
-      }
-    }
-  });
-
-  // HOST: Create new session
-  async function createSession() {
-    const btn = document.getElementById('create-btn');
     btn.disabled = true;
-    btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full spin"></div> Creating session...';
+    btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full spin"></div> Connecting...';
     
     try {
+      // Create session via API
       const res = await fetch('/api/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -183,60 +102,23 @@
         throw new Error(err.error || 'Failed to create session');
       }
 
-      const data = await res.json();
-      currentSession = data;
-
-      // Generate invite link with LiveKit credentials
-      const inviteData = btoa(JSON.stringify({
-        url: data.livekit_url,
-        token: data.livekit_client_token,
-        room: data.room_name,
-        sid: data.session_id
-      }));
-      const inviteLink = `${window.location.origin}?invite=${inviteData}`;
+      currentSession = await res.json();
       
-      // Update UI
-      document.getElementById('session-id').textContent = data.session_id.substring(0, 12) + '...';
-      document.getElementById('invite-link').value = inviteLink;
-      document.getElementById('session-active').classList.remove('hidden');
-      btn.classList.add('hidden');
+      // Show session view
+      document.getElementById('join-view').classList.add('hidden');
+      document.getElementById('session-view').classList.remove('hidden');
+      document.getElementById('user-display').textContent = userName;
 
-      // Connect host to room
-      await connectToRoom(data.livekit_url, data.livekit_client_token);
-
-    } catch (error) {
-      showError(error.message);
-      btn.disabled = false;
-      btn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Start Avatar Session`;
-    }
-  }
-
-  // GUEST: Join existing session using shared token
-  async function joinSession() {
-    const btn = document.getElementById('join-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full spin"></div> Joining...';
-    
-    try {
-      if (!currentSession || !currentSession.url || !currentSession.token) {
-        throw new Error('Invalid session data');
-      }
-
-      // Show connected view
-      document.getElementById('guest-join-form').classList.add('hidden');
-      document.getElementById('guest-connected').classList.remove('hidden');
-
-      // Connect using the shared token from invite link
-      await connectToRoom(currentSession.url, currentSession.token);
+      // Connect to LiveKit room
+      await connectToRoom(currentSession.livekit_url, currentSession.livekit_client_token);
 
     } catch (error) {
       showError(error.message);
       btn.disabled = false;
-      btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Join Session`;
+      btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Start Conversation`;
     }
   }
 
-  // Connect to LiveKit room
   async function connectToRoom(url, token) {
     try {
       room = new LivekitClient.Room({
@@ -244,15 +126,13 @@
         dynacast: true
       });
 
-      // Handle remote tracks (avatar video/audio)
       room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        const videoEl = isGuest ? document.getElementById('guest-avatar-video') : document.getElementById('avatar-video');
+        const videoEl = document.getElementById('avatar-video');
         
         if (track.kind === 'video') {
           track.attach(videoEl);
           videoEl.classList.remove('hidden');
-          const placeholder = document.getElementById('avatar-placeholder');
-          if (placeholder) placeholder.classList.add('hidden');
+          document.getElementById('avatar-placeholder').classList.add('hidden');
         }
         if (track.kind === 'audio') {
           const audioEl = document.createElement('audio');
@@ -262,47 +142,23 @@
         }
       });
 
-      room.on(LivekitClient.RoomEvent.Connected, () => {
-        console.log('Connected to room');
-        updateStatus('Connected');
-      });
-
       room.on(LivekitClient.RoomEvent.Disconnected, () => {
-        console.log('Disconnected from room');
-        updateStatus('Disconnected');
+        showError('Disconnected from session');
       });
 
-      room.on(LivekitClient.RoomEvent.Reconnecting, () => {
-        updateStatus('Reconnecting...');
-      });
-
-      room.on(LivekitClient.RoomEvent.Reconnected, () => {
-        updateStatus('Connected');
-      });
-
-      // Connect to room
       await room.connect(url, token);
-      console.log('Connected to room:', room.name);
 
-      // Publish local microphone (for talking to avatar)
+      // Publish microphone
       try {
         localAudioTrack = await LivekitClient.createLocalAudioTrack();
         await room.localParticipant.publishTrack(localAudioTrack);
-        console.log('Published local audio track');
       } catch (micError) {
-        console.warn('Could not access microphone:', micError);
-        showError('Microphone access denied - you can still watch and listen');
+        console.warn('Microphone access denied:', micError);
       }
 
     } catch (error) {
-      console.error('Connection error:', error);
-      showError('Connection failed: ' + error.message);
+      throw new Error('Connection failed: ' + error.message);
     }
-  }
-
-  function updateStatus(status) {
-    const el = isGuest ? document.getElementById('guest-status') : document.getElementById('connection-status');
-    if (el) el.textContent = status;
   }
 
   function toggleMic() {
@@ -317,18 +173,6 @@
     }
   }
 
-  function toggleGuestMic() {
-    if (localAudioTrack) {
-      isMuted = !isMuted;
-      if (isMuted) {
-        localAudioTrack.mute();
-      } else {
-        localAudioTrack.unmute();
-      }
-      document.getElementById('guest-mic-text').textContent = isMuted ? 'Unmute' : 'Mute';
-    }
-  }
-
   async function endSession() {
     if (room) await room.disconnect();
     if (currentSession?.session_token) {
@@ -337,38 +181,16 @@
           method: 'POST',
           headers: { 'Authorization': `Bearer ${currentSession.session_token}` }
         });
-      } catch (e) {
-        console.warn('Could not stop session:', e);
-      }
+      } catch (e) {}
     }
-    window.location.href = window.location.pathname;
-  }
-
-  async function leaveSession() {
-    if (room) await room.disconnect();
-    window.location.href = window.location.pathname;
-  }
-
-  function copyLink() {
-    const input = document.getElementById('invite-link');
-    navigator.clipboard.writeText(input.value);
-    const btn = document.getElementById('copy-btn');
-    btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!`;
-    btn.classList.remove('bg-white', 'text-purple-900');
-    btn.classList.add('bg-green-500', 'text-white');
-    setTimeout(() => {
-      btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg> Copy`;
-      btn.classList.remove('bg-green-500', 'text-white');
-      btn.classList.add('bg-white', 'text-purple-900');
-    }, 2000);
+    window.location.reload();
   }
 
   function showError(msg) {
-    const display = document.getElementById('error-display');
     document.getElementById('error-message').textContent = msg;
-    display.classList.remove('hidden');
+    document.getElementById('error-display').classList.remove('hidden');
     setTimeout(() => {
-      display.classList.add('hidden');
+      document.getElementById('error-display').classList.add('hidden');
     }, 6000);
   }
 </script>
