@@ -16,14 +16,8 @@ export default async function handler(req, res) {
   const voiceId = process.env.VOICE_ID;
   const contextId = process.env.CONTEXT_ID;
 
-  if (!apiKey) {
-    return res.status(500).json({ error: 'LIVEAVATAR_API_KEY is not set' });
-  }
-  if (!avatarId) {
-    return res.status(500).json({ error: 'AVATAR_ID is not set' });
-  }
-  if (!voiceId) {
-    return res.status(500).json({ error: 'VOICE_ID is not set' });
+  if (!apiKey || !avatarId || !voiceId) {
+    return res.status(500).json({ error: 'Missing environment variables' });
   }
 
   try {
@@ -49,27 +43,17 @@ export default async function handler(req, res) {
       body: JSON.stringify(tokenBody)
     });
 
-    const tokenText = await tokenRes.text();
+    const tokenJson = await tokenRes.json();
     
-    if (!tokenRes.ok) {
+    if (!tokenRes.ok || !tokenJson.data) {
       return res.status(500).json({ 
         error: 'Token creation failed', 
-        status: tokenRes.status,
-        details: tokenText 
+        details: tokenJson 
       });
     }
 
-    const tokenData = JSON.parse(tokenText);
-    
-    // Debug: Return what we got from step 1
-    if (!tokenData.session_token) {
-      return res.status(500).json({
-        error: 'No session_token in response',
-        received: tokenData
-      });
-    }
-
-    const { session_id, session_token } = tokenData;
+    // Token is inside data object
+    const { session_id, session_token } = tokenJson.data;
 
     const startRes = await fetch('https://api.liveavatar.com/v1/sessions/start', {
       method: 'POST',
@@ -79,18 +63,17 @@ export default async function handler(req, res) {
       }
     });
 
-    const startText = await startRes.text();
+    const startJson = await startRes.json();
 
-    if (!startRes.ok) {
+    if (!startRes.ok || !startJson.data) {
       return res.status(500).json({ 
         error: 'Session start failed', 
-        status: startRes.status,
-        details: startText,
-        tokenUsed: session_token.substring(0, 20) + '...'
+        details: startJson 
       });
     }
 
-    const data = JSON.parse(startText);
+    // Response data is also inside data object
+    const data = startJson.data;
 
     return res.status(200).json({
       session_id,
